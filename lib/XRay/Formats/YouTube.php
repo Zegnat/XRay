@@ -98,9 +98,6 @@ class YouTube extends Format {
           'url' => 'https://www.youtube.com/embed/' . $videoid,
         ]
       ],
-      'photo' => [
-        $video->thumbnails->maxres->url,
-      ],
       'author' => [
         'type' => 'card',
         'name' => $channel->title,
@@ -114,6 +111,16 @@ class YouTube extends Format {
     }
     if(isset($video->tags)) {
       $entry['category'] = $video->tags;
+    }
+
+    $thumb = null;
+    if(isset($video->thumbnails->maxres)) {
+      $thumb = $video->thumbnails->maxres;
+    }elseif(isset($video->thumbnails->standard)) {
+      $thumb = $video->thumbnails->standard;    
+    }
+    if($thumb !== null) {
+      $entry['photo'] = [ $thumb->url ];
     }
 
     return [
