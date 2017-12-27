@@ -42,6 +42,10 @@ class Parser {
       return Formats\Hackernews::parse($body, $url);
     }
 
+    if(Formats\YouTube::matches($url)) {
+      return Formats\YouTube::parse($body, $url);
+    }
+
     if(substr($body, 0, 5) == '<?xml') {
       return Formats\XML::parse($body, $url);
     }

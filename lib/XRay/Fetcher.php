@@ -58,6 +58,11 @@ class Fetcher {
       return Formats\Hackernews::fetch($this->http, $url, $opts);
     }
 
+    // Check if this is a YouTube URL and use the API
+    if(Formats\YouTube::matches_host($url)) {
+      return $this->_fetch_youtube($url, $opts);
+    }
+
     // All other URLs are fetched normally
 
     // Special-case appspot.com URLs to not follow redirects.
@@ -182,6 +187,25 @@ class Fetcher {
     }
 
     return Formats\GitHub::fetch($this->http, $url, $creds);
+  }
+
+  private function _fetch_youtube($url, $opts) {
+    $fields = ['youtube_api_key', 'youtube_api_referer'];
+    $creds = [];
+    foreach($fields as $f) {
+      if(isset($opts[$f]))
+        $creds[$f] = $opts[$f];
+    }
+
+    if(!isset($creds['youtube_api_key'])) {
+      return [
+        'error_code' => 400,
+        'error' => 'missing_parameters',
+        'error_description' => 'YouTube credentials must be included in the request'
+      ];
+    }
+
+    return Formats\YouTube::fetch($this->http, $url, $creds);
   }
 
 }
