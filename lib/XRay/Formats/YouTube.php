@@ -9,7 +9,7 @@ class YouTube extends Format {
   }
 
   public static function matches($url) {
-    if(preg_match('~^https?://(?:www\.)?youtu(?:be\.com/(?:embed/|watch\?(?:.+&)?v=)|\.be/)([a-z0-9_\-]+)~i', $url, $match))
+    if(preg_match('~^https?://(?:(?:m|www)\.)?youtu(?:be\.com/(?:embed/|v/|watch\?(?:.+&)?v=)|\.be/)([a-z0-9_\-]+)~i', $url, $match))
       return $match;
     else
       return false;
