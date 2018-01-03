@@ -14,7 +14,7 @@ class YouTube extends Format
     public static function matches_host($url): bool
     {
         $host = parse_url($url, PHP_URL_HOST);
-        return preg_match('~^((m|www)\.)?youtu(be\.com|\.be)$~i', $host) === 1;
+        return preg_match('~^(\w+\.)?youtu(be(-nocookie)?\.com|\.be)$~i', $host) === 1;
     }
 
     public static function matches($url): array
@@ -24,7 +24,7 @@ class YouTube extends Format
         $url['path'] = explode('/', trim($url['path'], '/'));
         parse_str($url['query'], $url['query']);
         // Check for playlists: /embed/videoseries?list={ID} and /playlist?list={ID}
-        if(($url['path'][0] === 'embed' &&
+        if (($url['path'][0] === 'embed' &&
             !empty($url['path'][1]) &&
             $url['path'][1] === 'videoseries' ||
             $url['path'][0] === 'playlist') &&
@@ -32,20 +32,26 @@ class YouTube extends Format
         ) {
             return [ 'type' => 'feed', 'id' => $url['query']['list'] ];
         }
+
         $id = false;
         // Short link: youtu.be/{ID}
-        if($url['host'] === 'youtu.be' && !empty($url['path'][0])) {
+        if ($url['host'] === 'youtu.be' && !empty($url['path'][0])) {
             $id = $url['path'][0];
         }
-        // Simple links: /v/{ID} and /embed/{ID}
-        if(in_array($url['path'][0], ['v', 'embed']) && !empty($url['path'][1])) {
+        // Simple links: /v/{ID}, /e/{ID}, and /embed/{ID}
+        if (in_array($url['path'][0], ['v', 'e', 'embed']) && !empty($url['path'][1])) {
             $id = $url['path'][1];
         }
-        // Otherwise assume v parameter: ?v={ID}
-        if(!empty($url['query']['v'])) {
+        // Otherwise assume v parameter: ?v={ID} or #!v={ID}
+        if (!empty($url['query']['v'])) {
             $id = $url['query']['v'];
+        } elseif (!empty($url['fragment']) && $url['fragment'][0] === '!') {
+            parse_str(substr($url['fragment'], 1), $fragment);
+            if (!empty($fragment['v'])) {
+                $id = $fragment['v'];
+            }
         }
-        if($id) {
+        if ($id) {
             return [ 'type' => 'entry', 'id' => $id ];
         }
         // Nothing
@@ -162,7 +168,7 @@ class YouTube extends Format
         return [
             'error' => $error,
             'error_description' => $description,
-            'error_code' => $code,
+            'error_code' => $code ?: 400,
         ];
     }
 
@@ -179,7 +185,15 @@ class YouTube extends Format
         if ($response['code'] === 200) {
             return $response;
         }
-        return static::returnError($response['body'], $response['code']);
+        if (strlen($response['body']) === 0 &&
+            strlen($response['error_description']) > 0
+        ) {
+            $response['body'] = $response['error_description'];
+        }
+        return static::returnError(
+            $response['body'],
+            $response['code']
+        );
     }
 
     public static function parse($responses, $url) {
