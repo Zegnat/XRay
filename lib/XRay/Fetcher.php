@@ -197,14 +197,6 @@ class Fetcher {
         $creds[$f] = $opts[$f];
     }
 
-    if(!isset($creds['youtube_api_key'])) {
-      return [
-        'error_code' => 400,
-        'error' => 'missing_parameters',
-        'error_description' => 'YouTube credentials must be included in the request'
-      ];
-    }
-
     return Formats\YouTube::fetch($this->http, $url, $creds);
   }
 
